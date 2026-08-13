@@ -7,6 +7,7 @@ import { createTopbar } from './ui/topbar'
 import { createProjectileScene } from './render/projectile'
 import { createDeflectionScene } from './render/deflection'
 import { createChargesScene } from './render/charges'
+import { createOrbitsScene } from './render/orbits'
 
 export interface SceneRenderer {
   mount: (root: HTMLElement) => void
@@ -16,17 +17,9 @@ export interface SceneRenderer {
 
 const store = createStore()
 const sceneRoot = document.getElementById('scene')!
-const placeholder = (): SceneRenderer => {
-  let canvas: HTMLCanvasElement | null = null
-  return {
-    mount: (root) => { canvas = document.createElement('canvas'); root.appendChild(canvas) },
-    unmount: () => { canvas?.remove() },
-    render: () => {},
-  }
-}
 const scenes: Record<Tab, SceneRenderer> = {
   projectile: createProjectileScene(store), deflection: createDeflectionScene(store),
-  charges: createChargesScene(store), orbits: placeholder(),
+  charges: createChargesScene(store), orbits: createOrbitsScene(store),
 }
 
 const topbar = createTopbar(store)
