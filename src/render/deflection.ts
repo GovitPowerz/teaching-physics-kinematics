@@ -83,7 +83,7 @@ export const createDeflectionScene = (store: Store): SceneRenderer => {
       const q = toScreen(vp(), sampleAt(s.sim.samples, t).pos)
       ctx.beginPath(); ctx.arc(q.x, q.y, 2.5, 0, 2 * Math.PI); ctx.fill()
     }
-    if (s.sim.stopReason === 'screen') {
+    if (s.sim.stopReason === 'screen' || s.sim.stopReason === 'custom') {
       const hit = toScreen(vp(), s.sim.samples[s.sim.samples.length - 1].pos)
       ctx.fillStyle = css('--danger')
       ctx.beginPath(); ctx.arc(hit.x, hit.y, 5, 0, 2 * Math.PI); ctx.fill()

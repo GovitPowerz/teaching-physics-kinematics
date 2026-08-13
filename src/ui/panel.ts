@@ -37,7 +37,8 @@ export const formulasFor = (s: AppState): string[] => {
     case 'deflection': {
       const d = s.deflection
       const last = s.sim.samples[s.sim.samples.length - 1]
-      const dy = s.sim.stopReason === 'screen' ? fmt(last.pos.y) : 'n/a'
+      const dy = s.sim.stopReason === 'screen' ? fmt(last.pos.y)
+        : s.sim.stopReason === 'custom' ? 'n/a (hit a plate)' : 'n/a'
       return [
         `x(t) = 0.20 + ${fmt(d.v0)}\u00b7t`,
         `y(t) = \u00bd\u00b7(qE/m)\u00b7t\u00b2 inside the plates, a = ${fmt(d.a)}`,

@@ -24,6 +24,13 @@ describe('panel formatters', () => {
     expect(lines[1]).toContain('v\u00b2')
     expect(lines[2]).toContain('v_esc')
   })
+  it('deflection formula reports a plate hit when the beam is stopped by the field', () => {
+    const store = createStore()
+    store.setTab('deflection')
+    store.patchDeflection({ a: 3 })
+    const lines = formulasFor(store.get())
+    expect(lines[2]).toContain('hit a plate')
+  })
   it('every tab has a caption', () => {
     for (const tab of ['projectile', 'deflection', 'charges', 'orbits'] as const)
       expect(CAPTIONS[tab].length).toBeGreaterThan(10)

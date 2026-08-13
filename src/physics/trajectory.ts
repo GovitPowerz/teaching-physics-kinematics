@@ -3,7 +3,7 @@ import { add, scale, sub, v, type Vec2 } from './vec2'
 
 export interface Sample { t: number; pos: Vec2; vel: Vec2; acc: Vec2 }
 export type StopReason =
-  'tMax' | 'ground' | 'bounds' | 'capture' | 'screen' | 'nonfinite' | 'samples'
+  'tMax' | 'ground' | 'bounds' | 'capture' | 'screen' | 'nonfinite' | 'samples' | 'custom'
 
 export interface SimOptions {
   dt: number
@@ -16,6 +16,7 @@ export interface SimOptions {
   capturePoints?: Vec2[]
   captureRadius?: number
   screenX?: number
+  stopWhen?: (pos: Vec2, vel: Vec2) => boolean
 }
 
 export interface SimResult { samples: Sample[]; stopReason: StopReason }
@@ -83,6 +84,7 @@ export const simulate = (s0: PState, force: Force, opts: SimOptions): SimResult 
           return { samples, stopReason: 'capture' }
       }
     }
+    if (opts.stopWhen && opts.stopWhen(cur.pos, cur.vel)) return { samples, stopReason: 'custom' }
     if (samples.length >= maxSamples) return { samples, stopReason: 'samples' }
   }
   return { samples, stopReason: 'tMax' }

@@ -37,6 +37,9 @@ export const buildSim = (s: AppState): SimResult => {
           ? inside(pos, vel) : v(0, 0)
       return simulate({ pos: v(0.2, 0), vel: v(d.v0, 0) }, force, {
         dt: 1 / 240, tMax: 30, screenX: PLATES.screenX, bounds: DOMAINS.deflection,
+        stopWhen: (pos) =>
+          pos.x >= PLATES.x0 && pos.x <= PLATES.x0 + d.plateLength &&
+          Math.abs(pos.y) >= PLATES.gap / 2,
       })
     }
     case 'charges': {

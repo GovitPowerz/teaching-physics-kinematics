@@ -60,6 +60,15 @@ describe('simulate', () => {
       { dt: 0.01, tMax: 100, capturePoints: [v(2, 0)], captureRadius: 0.12 })
       .stopReason).toBe('capture')
   })
+  it('stopWhen: custom predicate stops the sim with overshoot bounded by one step', () => {
+    const free = uniformField(v(0, 0))
+    const r = simulate({ pos: v(0, 0), vel: v(1, 0) }, free,
+      { dt: 0.01, tMax: 100, stopWhen: (pos) => pos.x >= 1 })
+    expect(r.stopReason).toBe('custom')
+    const last = r.samples[r.samples.length - 1]
+    expect(last.pos.x).toBeGreaterThanOrEqual(1)
+    expect(last.pos.x).toBeLessThanOrEqual(1.02)
+  })
   it('non-finite step truncates at last good sample', () => {
     const explode = () => v(Number.NaN, 0)
     const r = simulate({ pos: v(0, 0), vel: v(0, 0) }, explode, { dt: 0.01, tMax: 1 })

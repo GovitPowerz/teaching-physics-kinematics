@@ -19,6 +19,16 @@ describe('buildSim', () => {
     expect(inside && Math.abs(inside!.acc.y)).toBeCloseTo(st.deflection.a, 9)
     expect(sim.stopReason).toBe('screen')
   })
+  it('deflection beam stops at the plate when the field is strong enough', () => {
+    const st = createStore().get()
+    const sim = buildSim({ ...st, tab: 'deflection', deflection: { ...st.deflection, a: 3 } })
+    expect(sim.stopReason).toBe('custom')
+    const last = sim.samples[sim.samples.length - 1]
+    expect(Math.abs(last.pos.y)).toBeGreaterThanOrEqual(0.8)
+    expect(Math.abs(last.pos.y)).toBeLessThanOrEqual(0.83)
+    expect(last.pos.x).toBeGreaterThanOrEqual(2)
+    expect(last.pos.x).toBeLessThanOrEqual(6)
+  })
   it('orbits default is a closed ellipse simulated ~3 periods', () => {
     const st = createStore().get()
     const sim = buildSim({ ...st, tab: 'orbits' })
