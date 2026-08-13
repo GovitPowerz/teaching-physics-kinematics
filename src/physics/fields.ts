@@ -97,7 +97,7 @@ export const equipotentials = (
         if (idx === 5 || idx === 10) {
           const center = (c[0] + c[1] + c[2] + c[3]) / 4
           const pairs: [number, number][] =
-            (idx === 5) === (center > lv) ? [[3, 0], [1, 2]] : [[0, 1], [2, 3]]
+            (idx === 5) === (center > lv) ? [[0, 1], [2, 3]] : [[3, 0], [1, 2]]
           for (const [a, bb] of pairs) segs.push([edge(a), edge(bb)])
         } else {
           for (const [a, bb] of table[idx]) segs.push([edge(a), edge(bb)])

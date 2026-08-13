@@ -39,4 +39,35 @@ describe('fields', () => {
     for (const r of radii) expect(Math.abs(r - mean) / mean).toBeLessThan(0.02)
     expect(mean).toBeCloseTo(1, 1)
   })
+
+  const countLoops = (segs: Array<[ReturnType<typeof v>, ReturnType<typeof v>]>): number => {
+    const eq = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6
+    const used = new Array(segs.length).fill(false)
+    let loops = 0
+    for (let i = 0; i < segs.length; i++) {
+      if (used[i]) continue
+      used[i] = true
+      loops++
+      let end = segs[i][1]
+      let progress = true
+      while (progress) {
+        progress = false
+        for (let j = 0; j < segs.length; j++) {
+          if (used[j]) continue
+          if (eq(segs[j][0], end)) { used[j] = true; end = segs[j][1]; progress = true }
+          else if (eq(segs[j][1], end)) { used[j] = true; end = segs[j][0]; progress = true }
+        }
+      }
+    }
+    return loops
+  }
+
+  it('saddle disambiguation: level just below the saddle gives one connected contour', () => {
+    const charges = [{ pos: v(-1, -1), q: 1 }, { pos: v(1, 1), q: 1 }]
+    const saddleV = potentialAt(charges, v(0, 0))
+    const grid = { xMin: -2, xMax: 2, yMin: -2, yMax: 2, nx: 121, ny: 121 }
+    expect(countLoops(equipotentials(charges, [saddleV - 0.01], grid))).toBe(1)
+    expect(countLoops(equipotentials(charges, [saddleV + 0.01], grid))).toBe(2)
+  })
 })
