@@ -5,6 +5,7 @@ import { createPanel } from './ui/panel'
 import { createPlayback } from './ui/playback'
 import { createTopbar } from './ui/topbar'
 import { createProjectileScene } from './render/projectile'
+import { createDeflectionScene } from './render/deflection'
 
 export interface SceneRenderer {
   mount: (root: HTMLElement) => void
@@ -23,7 +24,7 @@ const placeholder = (): SceneRenderer => {
   }
 }
 const scenes: Record<Tab, SceneRenderer> = {
-  projectile: createProjectileScene(store), deflection: placeholder(),
+  projectile: createProjectileScene(store), deflection: createDeflectionScene(store),
   charges: placeholder(), orbits: placeholder(),
 }
 
