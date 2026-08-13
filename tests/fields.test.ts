@@ -67,7 +67,7 @@ describe('fields', () => {
     const charges = [{ pos: v(-1, -1), q: 1 }, { pos: v(1, 1), q: 1 }]
     const saddleV = potentialAt(charges, v(0, 0))
     const grid = { xMin: -2, xMax: 2, yMin: -2, yMax: 2, nx: 121, ny: 121 }
-    expect(countLoops(equipotentials(charges, [saddleV - 0.01], grid))).toBe(1)
-    expect(countLoops(equipotentials(charges, [saddleV + 0.01], grid))).toBe(2)
+    expect(countLoops(equipotentials(charges, [saddleV - 1e-4], grid))).toBe(1)
+    expect(countLoops(equipotentials(charges, [saddleV + 1e-4], grid))).toBe(2)
   })
 })
