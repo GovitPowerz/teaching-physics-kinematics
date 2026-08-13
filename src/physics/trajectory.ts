@@ -1,5 +1,5 @@
 import { rk4Step, type Force, type PState } from './integrate'
-import { add, scale, sub, type Vec2 } from './vec2'
+import { add, scale, sub, v, type Vec2 } from './vec2'
 
 export interface Sample { t: number; pos: Vec2; vel: Vec2; acc: Vec2 }
 export type StopReason =
@@ -44,7 +44,9 @@ export const simulate = (s0: PState, force: Force, opts: SimOptions): SimResult 
 
     if (opts.groundY !== undefined && next.pos.y < opts.groundY && cur.pos.y >= opts.groundY
         && next.vel.y < 0) {
-      const f = (cur.pos.y - opts.groundY) / (cur.pos.y - next.pos.y) // linear fraction
+      const denom = cur.pos.y - next.pos.y
+      const f = denom > 0 ? (cur.pos.y - opts.groundY) / denom : 0
+      if (f === 0) return { samples, stopReason: 'ground' }
       const tHit = t + f * opts.dt
       const hitPos = { x: cur.pos.x + f * (next.pos.x - cur.pos.x), y: opts.groundY }
       const hitVel = {
@@ -59,6 +61,7 @@ export const simulate = (s0: PState, force: Force, opts: SimOptions): SimResult 
       cur = { pos: hitPos, vel: { x: hitVel.x, y: -e * hitVel.y } }
       t = tHit
       push(cur, t)
+      if (samples.length >= maxSamples) return { samples, stopReason: 'samples' }
       continue
     }
 
@@ -89,6 +92,7 @@ export const duration = (r: SimResult): number =>
   r.samples.length ? r.samples[r.samples.length - 1].t : 0
 
 export const sampleAt = (samples: Sample[], t: number): Sample => {
+  if (samples.length === 0) return { t: 0, pos: v(0, 0), vel: v(0, 0), acc: v(0, 0) }
   if (t <= samples[0].t) return samples[0]
   const last = samples[samples.length - 1]
   if (t >= last.t) return last

@@ -75,4 +75,25 @@ describe('simulate', () => {
     expect(sampleAt(r.samples, -5).pos.x).toBeCloseTo(0, 9)
     expect(duration(r)).toBeCloseTo(1, 9)
   })
+  it('sampleAt handles empty array without throwing', () => {
+    const s = sampleAt([], 1)
+    expect(s.pos).toEqual(v(0, 0))
+    expect(s.vel).toEqual(v(0, 0))
+    expect(s.acc).toEqual(v(0, 0))
+    expect(s.t).toBe(0)
+  })
+  it('no duplicate t values on settling bounce (phantom double-fire prevention)', () => {
+    const r = simulate({ pos: v(0, 0.001), vel: v(0, 0) }, uniformGravity(9.81),
+      { dt: 1 / 60, tMax: 10, groundY: 0, restitution: 0.5, maxBounces: 50 })
+    expect(r.stopReason).toBe('ground')
+    for (let i = 1; i < r.samples.length; i++)
+      expect(r.samples[i].t).toBeGreaterThan(r.samples[i - 1].t)
+    for (const s of r.samples) expect(Number.isFinite(s.pos.y)).toBe(true)
+  })
+  it('maxSamples enforced on bounce continue path', () => {
+    const r = simulate({ pos: v(0, 10), vel: v(0, 0) }, uniformGravity(9.81),
+      { dt: 0.01, tMax: 1000, groundY: 0, restitution: 0.9, maxBounces: 1000, maxSamples: 50 })
+    expect(r.stopReason).toBe('samples')
+    expect(r.samples.length).toBeLessThanOrEqual(50)
+  })
 })
