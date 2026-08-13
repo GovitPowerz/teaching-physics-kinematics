@@ -12,7 +12,7 @@ function integrate(s: PState, dt: number, tEnd: number): PState {
 
 describe('rk4Step', () => {
   it('matches cos(t) on the harmonic oscillator', () => {
-    const end = integrate({ pos: v(1, 0), vel: v(0, 0) }, 0.01, Math.PI)
+    const end = integrate({ pos: v(1, 0), vel: v(0, 0) }, Math.PI / 1000, Math.PI)
     expect(end.pos.x).toBeCloseTo(Math.cos(Math.PI), 8)
     expect(end.vel.x).toBeCloseTo(-Math.sin(Math.PI), 8)
   })
