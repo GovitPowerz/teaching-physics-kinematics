@@ -58,8 +58,8 @@ export const sliderRow = (
   range.addEventListener('input', () => { set(Number(range.value)) })
   const commit = () => {
     const n = Number(text.value)
-    if (Number.isFinite(n)) set(Math.min(max, Math.max(min, n)))
-    refresh()
+    if (Number.isFinite(n)) { set(Math.min(max, Math.max(min, n))); refresh() }
+    else text.value = String(get())
   }
   text.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') commit() })
   text.addEventListener('blur', commit)
@@ -87,8 +87,8 @@ export const vecRow = (
     t.type = 'text'
     const commit = () => {
       const n = Number(t.value)
-      if (Number.isFinite(n)) set({ ...get(), [axis]: n })
-      refresh()
+      if (Number.isFinite(n)) { set({ ...get(), [axis]: n }); refresh() }
+      else t.value = get()[axis].toFixed(2)
     }
     t.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') commit() })
     t.addEventListener('blur', commit)
