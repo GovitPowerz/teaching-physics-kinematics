@@ -1,4 +1,5 @@
 import { equipotentials, fieldLines, type Segment } from '../physics/fields'
+import type { Charge } from '../physics/forces'
 import { duration, sampleAt } from '../physics/trajectory'
 import { add, v, type Vec2 } from '../physics/vec2'
 import { DOMAINS } from '../scenes'
@@ -19,16 +20,20 @@ export const createChargesScene = (store: Store): SceneRenderer => {
   let controls: HTMLElement
   let nextSign: 1 | -1 = 1
   let lastSelected: number | null | undefined
-  let cache: { rev: number; lines: Vec2[][]; equis: Segment[] } | null = null
+  let cache: { key: string; lines: Vec2[][]; equis: Segment[] } | null = null
 
   const vp = (): Viewport =>
     ({ world: DOMAINS.charges, w: canvas.clientWidth, h: canvas.clientHeight })
 
+  const chargesKey = (cs: Charge[]): string =>
+    cs.map((c) => `${c.pos.x},${c.pos.y},${c.q}`).join(';')
+
   const fieldCache = () => {
     const s = store.get()
-    if (!cache || cache.rev !== s.revision) {
+    const key = chargesKey(s.charges.charges)
+    if (!cache || cache.key !== key) {
       cache = {
-        rev: s.revision,
+        key,
         lines: fieldLines(s.charges.charges, { bounds: DOMAINS.charges }),
         equis: equipotentials(s.charges.charges, LEVELS,
           { ...DOMAINS.charges, nx: 120, ny: 120 }),
