@@ -137,7 +137,7 @@ export const createProjectileScene = (store: Store): SceneRenderer => {
       controls = document.createElement('div')
       controls.className = 'controls'
       const rows = [
-        sliderRow('gravity g (m/s²)', 1, 25, 0.01,
+        sliderRow('gravity g (m/s\u00b2)', 1, 25, 0.01,
           () => store.get().projectile.g, (g) => store.patchProjectile({ g })),
         sliderRow('drag k (1/s)', 0, 2, 0.01,
           () => store.get().projectile.dragK, (dragK) => store.patchProjectile({ dragK })),
