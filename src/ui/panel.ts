@@ -20,7 +20,7 @@ export const CAPTIONS: Record<Tab, string> = {
     'Field shape drives motion. Normalized units.',
   orbits:
     'One heavy body, one satellite. The sign of the energy decides: ellipse or ' +
-    'escape. Normalized units, μ = 1.',
+    'escape. Normalized units, \u03bc = 1.',
 }
 
 export const formulasFor = (s: AppState): string[] => {
