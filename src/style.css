@@ -1,6 +1,6 @@
 :root {
   --bg: #12141a; --fg: #e6e6e6; --dim: #8a8f9a; --accent: #5ab0f0;
-  --ghost: #7fd07f; --ghost-ref: #5a5f6a; --danger: #f07f7f;
+  --ghost: #7fd07f; --ghost-ref: #7a808f; --danger: #f07f7f; --grid: #2a2e38;
 }
 * { box-sizing: border-box; margin: 0; }
 body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
@@ -21,4 +21,3 @@ body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-s
 #panel { padding: 8px 14px; border-top: 1px solid #2a2e38; min-height: 76px; }
 #panel .formula { font-family: ui-monospace, monospace; color: var(--fg); }
 #panel .caption { color: var(--dim); font-size: 12px; margin-top: 4px; }
-.hidden { display: none; }

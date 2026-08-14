@@ -68,10 +68,15 @@ export const formulasFor = (s: AppState): string[] => {
 
 export const createPanel = (store: Store) => {
   const el = document.createElement('div')
+  let lastKey: string | null = null
   const render = () => {
     const s = store.get()
+    const lines = formulasFor(s)
+    const key = s.tab + '|' + lines.join('\n')
+    if (key === lastKey) return
+    lastKey = key
     el.innerHTML = ''
-    for (const line of formulasFor(s)) {
+    for (const line of lines) {
       const div = document.createElement('div')
       div.className = 'formula'
       div.textContent = line
