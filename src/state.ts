@@ -75,6 +75,7 @@ export const createStore = (): Store => {
     patchOrbits: (p) => { Object.assign(state.orbits, p); recompute() },
     setTestCharge: (p) => { Object.assign(state.charges, p); recompute() },
     addCharge: (pos, q) => {
+      state.charges.selected = null
       if (state.charges.charges.length >= 8) return
       state.charges.charges.push({ pos, q })
       recompute()

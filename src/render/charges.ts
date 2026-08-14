@@ -30,9 +30,12 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     const s = store.get()
     const key = chargesKey(s.charges.charges)
     if (!cache || cache.key !== key) {
+      const totalUnits = s.charges.charges
+        .reduce((acc, c) => acc + Math.max(1, Math.round(Math.abs(c.q))), 0)
+      const seedsPerUnitCharge = totalUnits > 12 ? Math.max(2, Math.floor(96 / totalUnits)) : 8
       cache = {
         key,
-        lines: fieldLines(s.charges.charges, { bounds: DOMAINS.charges }),
+        lines: fieldLines(s.charges.charges, { bounds: DOMAINS.charges, seedsPerUnitCharge }),
         equis: equipotentials(s.charges.charges, LEVELS,
           { ...DOMAINS.charges, nx: 120, ny: 120 }),
       }
@@ -133,6 +136,11 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     arrow(ctx, tp, toScreen(vp(), add(s.charges.testPos, s.charges.testVel)), COLORS.accent)
     ctx.fillStyle = COLORS.fg
     ctx.beginPath(); ctx.arc(tp.x, tp.y, 5, 0, 2 * Math.PI); ctx.fill()
+    ctx.fillStyle = COLORS.bg
+    ctx.font = 'bold 13px system-ui'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(s.charges.testSign > 0 ? '+' : '\u2212', tp.x, tp.y)
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic'
 
     drawCurrentMarker(ctx, vp(), s)
   }
@@ -160,8 +168,10 @@ export const createChargesScene = (store: Store): SceneRenderer => {
         },
         (screenPos) => {
           const w = toWorld(vp(), screenPos)
-          store.selectCharge(null)
           store.addCharge(w, nextSign)
+        },
+        (id) => {
+          if (id.startsWith('charge:')) store.selectCharge(Number(id.slice(7)))
         })
     },
     unmount: () => { canvas.remove(); controls.remove() },

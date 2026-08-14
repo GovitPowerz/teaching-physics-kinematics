@@ -116,6 +116,9 @@ export const createProjectileScene = (store: Store): SceneRenderer => {
           (i) => store.patchProjectile({ g: [1.62, 9.81, 24.79][i] })),
         ...rows.slice(1).map((r) => r.el))
       refreshRows = () => rows.forEach((r) => r.refresh())
+      const hint = document.createElement('label')
+      hint.textContent = 'drag the launch point and the velocity arrow'
+      controls.appendChild(hint)
       root.append(canvas, controls)
       attachDrag(canvas, handles, (id, screenPos) => {
         const w = toWorld(vp(), screenPos)

@@ -12,27 +12,72 @@ export const hitTest = (handles: Handle[], p: Vec2): string | null => {
   return best
 }
 
+const DRAG_THRESHOLD = 4
+
 export const attachDrag = (
   canvas: HTMLCanvasElement,
   getHandles: () => Handle[],
   onDrag: (id: string, screenPos: Vec2) => void,
   onTapEmpty?: (screenPos: Vec2) => void,
+  onTapHandle?: (id: string) => void,
 ): void => {
-  let dragging: string | null = null
+  let pressed: string | null = null
+  let start: Vec2 | null = null
+  let isDrag = false
+  let rafId: number | null = null
+  let pending: Vec2 | null = null
+
   const local = (ev: PointerEvent): Vec2 => {
     const r = canvas.getBoundingClientRect()
     return v(ev.clientX - r.left, ev.clientY - r.top)
   }
+
+  const flush = () => {
+    rafId = null
+    if (pressed && pending) onDrag(pressed, pending)
+  }
+
+  const reset = () => {
+    pressed = null; start = null; isDrag = false; pending = null
+    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null }
+    canvas.style.cursor = 'default'
+  }
+
   canvas.addEventListener('pointerdown', (ev) => {
     const p = local(ev)
-    dragging = hitTest(getHandles(), p)
-    if (dragging) { canvas.setPointerCapture(ev.pointerId); onDrag(dragging, p) }
-    else onTapEmpty?.(p)
+    pressed = hitTest(getHandles(), p)
+    start = p
+    isDrag = false
+    canvas.setPointerCapture(ev.pointerId)
   })
+
   canvas.addEventListener('pointermove', (ev) => {
-    if (dragging) onDrag(dragging, local(ev))
+    const p = local(ev)
+    if (!start) {
+      canvas.style.cursor = hitTest(getHandles(), p) ? 'grab' : 'default'
+      return
+    }
+    if (!isDrag) {
+      const moved = Math.hypot(p.x - start.x, p.y - start.y)
+      if (moved <= DRAG_THRESHOLD) return
+      isDrag = true
+      canvas.style.cursor = 'grabbing'
+    }
+    if (pressed) {
+      pending = p
+      if (rafId === null) rafId = requestAnimationFrame(flush)
+    }
   })
-  canvas.addEventListener('pointerup', () => { dragging = null })
+
+  canvas.addEventListener('pointerup', (ev) => {
+    if (!isDrag) {
+      if (pressed) onTapHandle?.(pressed)
+      else onTapEmpty?.(local(ev))
+    }
+    reset()
+  })
+
+  canvas.addEventListener('pointercancel', () => { reset() })
 }
 
 export interface ControlRow { el: HTMLElement; refresh: () => void }

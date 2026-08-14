@@ -25,8 +25,11 @@ export const createPlayback = (store: Store) => {
     l.append(c, document.createTextNode(' ' + label))
     return l
   }
+  let scrubbing = false
   play.addEventListener('click', () => store.setPlaying(!store.get().playback.playing))
   reset.addEventListener('click', () => { store.setPlaying(false); store.setT(0) })
+  scrub.addEventListener('pointerdown', () => { scrubbing = true })
+  scrub.addEventListener('pointerup', () => { scrubbing = false })
   scrub.addEventListener('input', () => { store.setPlaying(false); store.setT(Number(scrub.value)) })
   speed.addEventListener('change', () => store.setSpeed(Number(speed.value)))
   el.append(play, reset, scrub, speed, mkToggle('v', 'v'), mkToggle('a', 'a'))
@@ -34,7 +37,7 @@ export const createPlayback = (store: Store) => {
     const s = store.get()
     play.textContent = s.playback.playing ? 'Pause' : 'Play'
     scrub.max = String(duration(s.sim))
-    if (document.activeElement !== scrub) scrub.value = String(s.playback.t)
+    if (!scrubbing) scrub.value = String(s.playback.t)
   }
   return { el, render }
 }

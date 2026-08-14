@@ -90,6 +90,9 @@ export const createDeflectionScene = (store: Store): SceneRenderer => {
         buttonRow(['flip charge'], () =>
           store.patchDeflection({ sign: store.get().deflection.sign > 0 ? -1 : 1 })))
       refreshRows = () => rows.forEach((r) => r.refresh())
+      const hint = document.createElement('label')
+      hint.textContent = 'drag the velocity arrow'
+      controls.appendChild(hint)
       root.append(canvas, controls)
       attachDrag(canvas, handles, (_id, screenPos) => {
         const w = toWorld(vp(), screenPos)
