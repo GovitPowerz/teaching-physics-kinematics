@@ -1,5 +1,6 @@
 import {
   conicType, eccVector, escapeVelocity, periapsisApoapsis, semiMajorAxis, specificEnergy,
+  sweptArea,
 } from '../physics/orbital'
 import { sampleAt } from '../physics/trajectory'
 import { add, len, norm, scale, v } from '../physics/vec2'
@@ -59,6 +60,9 @@ export const createOrbitsScene = (store: Store): SceneRenderer => {
       }
       ctx.closePath(); ctx.fill()
       ctx.globalAlpha = 1
+      ctx.fillStyle = COLORS.fg
+      ctx.font = '13px ui-monospace, monospace'
+      ctx.fillText(`swept area = ${fmt(sweptArea(s.sim.samples, t0, t1))}`, 12, 56)
     }
 
     const eVec = eccVector(st, MU)

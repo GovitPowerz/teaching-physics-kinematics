@@ -70,7 +70,11 @@ export const createStore = (): Store => {
     get: () => state,
     subscribe: (fn) => { subs.push(fn) },
     setTab: (tab) => { state.tab = tab; recompute() },
-    patchProjectile: (p) => { Object.assign(state.projectile, p); recompute() },
+    patchProjectile: (p) => {
+      Object.assign(state.projectile, p)
+      state.projectile.launch.y = Math.max(0, state.projectile.launch.y)
+      recompute()
+    },
     patchDeflection: (p) => { Object.assign(state.deflection, p); recompute() },
     patchOrbits: (p) => { Object.assign(state.orbits, p); recompute() },
     setTestCharge: (p) => { Object.assign(state.charges, p); recompute() },

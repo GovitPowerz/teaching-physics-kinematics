@@ -132,6 +132,10 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     })
     ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic'
 
+    drawCurrentMarker(ctx, vp(), s)
+
+    // drawn after drawCurrentMarker so the test-charge sign glyph is not hidden
+    // by the undecorated playback dot when it sits at rest on top of it (t = 0)
     const tp = toScreen(vp(), s.charges.testPos)
     arrow(ctx, tp, toScreen(vp(), add(s.charges.testPos, s.charges.testVel)), COLORS.accent)
     ctx.fillStyle = COLORS.fg
@@ -141,8 +145,6 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillText(s.charges.testSign > 0 ? '+' : '\u2212', tp.x, tp.y)
     ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic'
-
-    drawCurrentMarker(ctx, vp(), s)
   }
 
   return {

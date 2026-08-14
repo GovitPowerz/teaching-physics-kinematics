@@ -18,7 +18,7 @@ export const createDeflectionScene = (store: Store): SceneRenderer => {
 
   const handles = (): Handle[] => {
     const d = store.get().deflection
-    return [{ id: 'v0', pos: toScreen(vp(), v(0.2 + d.v0, 0)), radius: 12 }]
+    return [{ id: 'v0', pos: toScreen(vp(), v(PLATES.entryX + d.v0, 0)), radius: 12 }]
   }
 
   const render = () => {
@@ -66,7 +66,8 @@ export const createDeflectionScene = (store: Store): SceneRenderer => {
       ctx.beginPath(); ctx.arc(hit.x, hit.y, 5, 0, 2 * Math.PI); ctx.fill()
     }
 
-    arrow(ctx, toScreen(vp(), v(0.2, 0)), toScreen(vp(), v(0.2 + d.v0, 0)), COLORS.accent)
+    arrow(ctx, toScreen(vp(), v(PLATES.entryX, 0)),
+      toScreen(vp(), v(PLATES.entryX + d.v0, 0)), COLORS.accent)
 
     drawCurrentMarker(ctx, vp(), s)
   }
@@ -87,7 +88,7 @@ export const createDeflectionScene = (store: Store): SceneRenderer => {
           () => store.get().deflection.v0, (v0) => store.patchDeflection({ v0 })),
       ]
       controls.append(...rows.map((r) => r.el),
-        buttonRow(['flip charge'], () =>
+        buttonRow(['flip plate polarity'], () =>
           store.patchDeflection({ sign: store.get().deflection.sign > 0 ? -1 : 1 })))
       refreshRows = () => rows.forEach((r) => r.refresh())
       const hint = document.createElement('label')
@@ -96,7 +97,7 @@ export const createDeflectionScene = (store: Store): SceneRenderer => {
       root.append(canvas, controls)
       attachDrag(canvas, handles, (_id, screenPos) => {
         const w = toWorld(vp(), screenPos)
-        store.patchDeflection({ v0: Math.min(5, Math.max(1, w.x - 0.2)) })
+        store.patchDeflection({ v0: Math.min(5, Math.max(1, w.x - PLATES.entryX)) })
       })
     },
     unmount: () => { canvas.remove(); controls.remove() },

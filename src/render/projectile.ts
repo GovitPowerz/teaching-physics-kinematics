@@ -81,7 +81,10 @@ export const createProjectileScene = (store: Store): SceneRenderer => {
     if (s.sim.stopReason === 'ground') {
       const last = s.sim.samples[s.sim.samples.length - 1]
       const lp = toScreen(vp(), last.pos)
-      ctx.fillText(`range ${fmt(last.pos.x - p.launch.x)} m`, lp.x - 30, lp.y - 8)
+      // after a bounce the last sample's x is cumulative distance, not a clean
+      // launch-to-landing range, so label it distinctly
+      const label = p.restitution > 0 ? 'total x' : 'range'
+      ctx.fillText(`${label} ${fmt(last.pos.x - p.launch.x)} m`, lp.x - 30, lp.y - 8)
     }
 
     const launchPx = toScreen(vp(), p.launch)
