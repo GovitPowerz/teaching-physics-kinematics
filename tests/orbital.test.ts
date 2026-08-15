@@ -42,7 +42,6 @@ describe('orbital', () => {
     const s = { pos: v(1, 0), vel: v(0, 1.8) }
     const a = semiMajorAxis(s, MU)
     expect(a).toBeCloseTo(-1 / (2 * 0.62), 9)
-    expect(a).toBeCloseTo(-0.8065, 4)
     expect(dot(s.vel, s.vel)).toBeCloseTo(MU * (2 / 1 - 1 / a), 9)
     expect(periapsisApoapsis(s, MU).ra).toBeNull()
   })

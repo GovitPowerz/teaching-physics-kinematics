@@ -30,6 +30,7 @@ export const createPlayback = (store: Store) => {
   reset.addEventListener('click', () => { store.setPlaying(false); store.setT(0) })
   scrub.addEventListener('pointerdown', () => { scrubbing = true })
   scrub.addEventListener('pointerup', () => { scrubbing = false })
+  scrub.addEventListener('pointercancel', () => { scrubbing = false })
   scrub.addEventListener('input', () => { store.setPlaying(false); store.setT(Number(scrub.value)) })
   speed.addEventListener('change', () => store.setSpeed(Number(speed.value)))
   el.append(play, reset, scrub, speed, mkToggle('v', 'v'), mkToggle('a', 'a'))

@@ -80,7 +80,7 @@ export const createStore = (): Store => {
     setTestCharge: (p) => { Object.assign(state.charges, p); recompute() },
     addCharge: (pos, q) => {
       state.charges.selected = null
-      if (state.charges.charges.length >= 8) return
+      if (state.charges.charges.length >= 8) { notify(); return }
       state.charges.charges.push({ pos, q })
       recompute()
     },

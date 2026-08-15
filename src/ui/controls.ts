@@ -34,6 +34,7 @@ export const attachDrag = (
 
   const flush = () => {
     rafId = null
+    if (!canvas.isConnected) return
     if (pressed && pending) onDrag(pressed, pending)
   }
 
@@ -61,7 +62,7 @@ export const attachDrag = (
       const moved = Math.hypot(p.x - start.x, p.y - start.y)
       if (moved <= DRAG_THRESHOLD) return
       isDrag = true
-      canvas.style.cursor = 'grabbing'
+      if (pressed) canvas.style.cursor = 'grabbing'
     }
     if (pressed) {
       pending = p

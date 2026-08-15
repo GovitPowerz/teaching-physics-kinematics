@@ -45,7 +45,8 @@ export const periapsisApoapsis = (s: PState, mu: number): { rp: number; ra: numb
 export const sweptArea = (samples: Sample[], t0: number, t1: number): number => {
   let area = 0
   for (let i = 1; i < samples.length; i++) {
-    if (samples[i].t <= t0 || samples[i - 1].t >= t1) continue
+    if (samples[i - 1].t >= t1) break
+    if (samples[i].t <= t0) continue
     area += Math.abs(cross(samples[i - 1].pos, samples[i].pos)) / 2
   }
   return area
