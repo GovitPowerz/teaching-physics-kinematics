@@ -99,6 +99,12 @@ describe('simulate', () => {
       expect(r.samples[i].t).toBeGreaterThan(r.samples[i - 1].t)
     for (const s of r.samples) expect(Number.isFinite(s.pos.y)).toBe(true)
   })
+  it('tMax = 0 still returns at least the initial sample', () => {
+    const r = simulate({ pos: v(0, 0), vel: v(0, 0) }, uniformGravity(9.81),
+      { dt: 0.01, tMax: 0 })
+    expect(r.samples.length).toBeGreaterThanOrEqual(1)
+    expect(r.stopReason).toBe('tMax')
+  })
   it('maxSamples enforced on bounce continue path', () => {
     const r = simulate({ pos: v(0, 10), vel: v(0, 0) }, uniformGravity(9.81),
       { dt: 0.01, tMax: 1000, groundY: 0, restitution: 0.9, maxBounces: 1000, maxSamples: 50 })

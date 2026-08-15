@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { CAPTIONS, fmt, formulasFor } from '../src/ui/panel'
 import { createStore } from '../src/state'
+import { fieldAt } from '../src/physics/fields'
+import { len } from '../src/physics/vec2'
 
 describe('panel formatters', () => {
   it('fmt fixes digits and normalizes negative zero', () => {
@@ -30,6 +32,24 @@ describe('panel formatters', () => {
     store.patchDeflection({ a: 3 })
     const lines = formulasFor(store.get())
     expect(lines[2]).toContain('hit a plate')
+  })
+  it('deflection formula reports the screen deflection on the default (screen) path', () => {
+    const store = createStore()
+    store.setTab('deflection')
+    const s = store.get()
+    const last = s.sim.samples[s.sim.samples.length - 1]
+    const lines = formulasFor(s)
+    expect(s.sim.stopReason).toBe('screen')
+    expect(lines[2]).toBe(`deflection at screen = ${fmt(last.pos.y)}`)
+  })
+  it('charges formulas match an independently computed field sample', () => {
+    const store = createStore()
+    store.setTab('charges')
+    const s = store.get()
+    const E = fieldAt(s.charges.charges, s.charges.testPos)
+    const lines = formulasFor(s)
+    expect(lines[0]).toBe(`E(test) = (${fmt(E.x)}, ${fmt(E.y)}), |E| = ${fmt(len(E))}`)
+    expect(lines[1]).toContain('superposition of 2 charges')
   })
   it('every tab has a caption', () => {
     for (const tab of ['projectile', 'deflection', 'charges', 'orbits'] as const)

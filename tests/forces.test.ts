@@ -42,4 +42,7 @@ describe('forces', () => {
     expect(a.x).toBeLessThan(0)
     expect(a.y).toBeCloseTo(0, 12)
   })
+  it('coulomb with no charges yields zero acceleration', () => {
+    expect(coulomb([], 1)(v(1, 2), v(0, 0))).toEqual(v(0, 0))
+  })
 })

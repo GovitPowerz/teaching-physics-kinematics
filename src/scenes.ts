@@ -38,8 +38,8 @@ export const buildSim = (s: AppState): SimResult => {
         pos.x >= PLATES.x0 && pos.x <= PLATES.x0 + d.plateLength
           ? inside(pos, vel) : v(0, 0)
       return simulate({ pos: v(PLATES.entryX, 0), vel: v(d.v0, 0) }, force, {
-        dt: 1 / 240, // s (SI)
-        tMax: 30, // s (SI)
+        dt: 1 / 240, // normalized time
+        tMax: 30, // normalized time
         screenX: PLATES.screenX, bounds: DOMAINS.deflection,
         stopWhen: (pos) =>
           pos.x >= PLATES.x0 && pos.x <= PLATES.x0 + d.plateLength &&
