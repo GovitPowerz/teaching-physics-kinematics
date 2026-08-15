@@ -52,7 +52,19 @@ describe('panel formatters', () => {
     expect(lines[1]).toContain('superposition of 2 charges')
   })
   it('every tab has a caption', () => {
-    for (const tab of ['projectile', 'deflection', 'charges', 'orbits'] as const)
+    for (const tab of ['projectile', 'deflection', 'charges', 'orbits', 'incline'] as const)
       expect(CAPTIONS[tab].length).toBeGreaterThan(10)
+  })
+  it('incline formulas carry live numbers, with a stuck message when static friction holds', () => {
+    const store = createStore()
+    store.setTab('incline')
+    const lines = formulasFor(store.get())
+    expect(lines[0]).toContain('N = ')
+    expect(lines[1]).toContain('a = ')
+    expect(lines[2]).toContain('stops after')
+
+    store.patchIncline({ v0: 0, mu: 0.5, theta: 10 * Math.PI / 180 })
+    const stuckLines = formulasFor(store.get())
+    expect(stuckLines[1]).toContain('static friction')
   })
 })

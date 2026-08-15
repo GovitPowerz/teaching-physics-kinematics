@@ -1,7 +1,8 @@
 import { fieldAt } from '../physics/fields'
 import { conicType, eccentricity, escapeVelocity, specificEnergy } from '../physics/orbital'
+import { duration } from '../physics/trajectory'
 import { dot, len } from '../physics/vec2'
-import { MU, PLATES } from '../scenes'
+import { INCLINE, MU, PLATES } from '../scenes'
 import type { AppState, Store, Tab } from '../state'
 
 export const fmt = (x: number, digits = 2): string => {
@@ -21,6 +22,9 @@ export const CAPTIONS: Record<Tab, string> = {
   orbits:
     'One heavy body, one satellite. The sign of the energy decides: ellipse or ' +
     'escape. Normalized units, \u03bc = 1.',
+  incline:
+    'Weight splits along and across the plane; friction opposes sliding. ' +
+    'SI units, m = 1 kg.',
 }
 
 export const formulasFor = (s: AppState): string[] => {
@@ -67,6 +71,26 @@ export const formulasFor = (s: AppState): string[] => {
         `vis-viva: v\u00b2 = \u03bc\u00b7(2/r \u2212 1/a) = ${fmt(dot(st.vel, st.vel))}`,
         `v_esc = \u221a(2\u03bc/r) = ${fmt(escapeVelocity(len(st.pos), MU))}`,
       ]
+    }
+    case 'incline': {
+      const i = s.incline
+      const th = i.theta
+      const mu = i.mu
+      const N = INCLINE.g * Math.cos(th)
+      const stuck = s.sim.stopReason === 'custom' && duration(s.sim) < 0.1
+      const aVal = -INCLINE.g * (Math.sin(th) + mu * Math.cos(th) * Math.sign(i.v0))
+      const lines = [
+        `N = mg\u00b7cos\u03b8 = ${fmt(N)} N`,
+        stuck
+          ? `a = 0 (static friction)`
+          : `a = g\u00b7(sin\u03b8 \u2212 \u03bc\u00b7cos\u03b8) = ${fmt(aVal)} m/s\u00b2`,
+      ]
+      if (i.v0 > 0) {
+        const d = (i.v0 * i.v0) / (2 * INCLINE.g * (Math.sin(th) + mu * Math.cos(th)))
+        lines.push(
+          `stops after d = v0\u00b2/(2g(sin\u03b8 + \u03bc\u00b7cos\u03b8)) = ${fmt(d)} m`)
+      }
+      return lines
     }
   }
 }

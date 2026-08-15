@@ -75,6 +75,17 @@ describe('store', () => {
     expect(s.get().playback.playing).toBe(false)
     expect(s.get().playback.t).toBe(0)
   })
+  it('patchIncline mutates incline, recomputes sim, resets playback', () => {
+    const s = createStore()
+    s.setPlaying(true)
+    s.setT(1)
+    const before = s.get().sim
+    s.patchIncline({ v0: 6 })
+    expect(s.get().incline.v0).toBe(6)
+    expect(s.get().sim).not.toBe(before)
+    expect(s.get().playback.playing).toBe(false)
+    expect(s.get().playback.t).toBe(0)
+  })
   it('moveCharge mutates the charge position, recomputes sim, resets playback', () => {
     const s = createStore()
     s.setPlaying(true)
