@@ -2,7 +2,7 @@ import type { Store, Tab } from '../state'
 
 const TABS: Array<[Tab, string]> = [
   ['projectile', 'Projectile'], ['deflection', 'Deflection'],
-  ['charges', 'Charges'], ['orbits', 'Orbits'],
+  ['charges', 'Charges'], ['orbits', 'Orbits'], ['incline', 'Incline'],
 ]
 
 export const createTopbar = (store: Store) => {

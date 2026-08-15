@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildSim, PLATES } from '../src/scenes'
+import { duration } from '../src/physics/trajectory'
+import { buildSim, INCLINE, PLATES } from '../src/scenes'
 import { createStore } from '../src/state'
 
 describe('buildSim', () => {
@@ -33,5 +34,47 @@ describe('buildSim', () => {
     const st = createStore().get()
     const sim = buildSim({ ...st, tab: 'orbits' })
     expect(sim.stopReason).toBe('tMax')
+  })
+  it('incline frictionless motion matches the closed form (RK4 exact on a quadratic)', () => {
+    const st = createStore().get()
+    const theta = 30 * Math.PI / 180
+    const sim = buildSim({
+      ...st, tab: 'incline', incline: { s0: 2, v0: 3, theta, mu: 0 },
+    })
+    for (const sample of sim.samples) {
+      const expected = 2 + 3 * sample.t - 0.5 * INCLINE.g * Math.sin(theta) * sample.t ** 2
+      expect(sample.pos.x).toBeCloseTo(expected, 9)
+    }
+    expect(sim.stopReason).toBe('bounds')
+  })
+  it('incline sticks on a shallow slope when static friction holds (tan theta <= mu)', () => {
+    const st = createStore().get()
+    const theta = 15 * Math.PI / 180
+    const mu = 0.3
+    const sim = buildSim({
+      ...st, tab: 'incline', incline: { s0: 3, v0: 4, theta, mu },
+    })
+    expect(sim.stopReason).toBe('custom')
+    const last = sim.samples[sim.samples.length - 1]
+    const analytic = 3 + 16 / (2 * INCLINE.g * (Math.sin(theta) + mu * Math.cos(theta)))
+    expect(Math.abs(last.pos.x - analytic) / analytic).toBeLessThan(0.02)
+  })
+  it('incline slides back down a steep slope after the uphill launch stalls', () => {
+    const st = createStore().get()
+    const theta = 25 * Math.PI / 180
+    const sim = buildSim({
+      ...st, tab: 'incline', incline: { s0: 3, v0: 4, theta, mu: 0.2 },
+    })
+    expect(sim.samples.some((sample) => sample.vel.x < -0.1)).toBe(true)
+    expect(sim.stopReason).toBe('bounds')
+  })
+  it('incline with zero initial velocity sticks immediately when static friction holds', () => {
+    const st = createStore().get()
+    const theta = 10 * Math.PI / 180
+    const sim = buildSim({
+      ...st, tab: 'incline', incline: { s0: 3, v0: 0, theta, mu: 0.5 },
+    })
+    expect(sim.stopReason).toBe('custom')
+    expect(duration(sim)).toBeLessThan(0.1)
   })
 })

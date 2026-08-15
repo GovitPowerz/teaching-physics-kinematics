@@ -3,7 +3,7 @@ import { duration, type SimResult } from './physics/trajectory'
 import { v, type Vec2 } from './physics/vec2'
 import { buildSim } from './scenes'
 
-export type Tab = 'projectile' | 'deflection' | 'charges' | 'orbits'
+export type Tab = 'projectile' | 'deflection' | 'charges' | 'orbits' | 'incline'
 
 export interface AppState {
   tab: Tab
@@ -14,6 +14,7 @@ export interface AppState {
     selected: number | null
   }
   orbits: { pos: Vec2; vel: Vec2 }
+  incline: { s0: number; v0: number; theta: number; mu: number }
   playback: { playing: boolean; t: number; speed: number }
   overlays: { v: boolean; a: boolean }
   sim: SimResult
@@ -27,6 +28,7 @@ export interface Store {
   patchProjectile: (p: Partial<AppState['projectile']>) => void
   patchDeflection: (p: Partial<AppState['deflection']>) => void
   patchOrbits: (p: Partial<AppState['orbits']>) => void
+  patchIncline: (p: Partial<AppState['incline']>) => void
   setTestCharge: (p: Partial<{ testPos: Vec2; testVel: Vec2; testSign: 1 | -1 }>) => void
   addCharge: (pos: Vec2, q: number) => void
   moveCharge: (i: number, pos: Vec2) => void
@@ -49,6 +51,7 @@ export const createStore = (): Store => {
       testPos: v(-3, 2), testVel: v(1.2, -0.6), testSign: 1, selected: null,
     },
     orbits: { pos: v(1.5, 0), vel: v(0, 0.9) },
+    incline: { s0: 3, v0: 4, theta: 20 * Math.PI / 180, mu: 0.3 }, // theta rad
     playback: { playing: false, t: 0, speed: 1 },
     overlays: { v: true, a: true },
     sim: { samples: [], stopReason: 'tMax' },
@@ -77,6 +80,7 @@ export const createStore = (): Store => {
     },
     patchDeflection: (p) => { Object.assign(state.deflection, p); recompute() },
     patchOrbits: (p) => { Object.assign(state.orbits, p); recompute() },
+    patchIncline: (p) => { Object.assign(state.incline, p); recompute() },
     setTestCharge: (p) => { Object.assign(state.charges, p); recompute() },
     addCharge: (pos, q) => {
       state.charges.selected = null

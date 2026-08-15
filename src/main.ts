@@ -8,6 +8,7 @@ import { createProjectileScene } from './render/projectile'
 import { createDeflectionScene } from './render/deflection'
 import { createChargesScene } from './render/charges'
 import { createOrbitsScene } from './render/orbits'
+import { createInclineScene } from './render/incline'
 
 export interface SceneRenderer {
   mount: (root: HTMLElement) => void
@@ -17,9 +18,11 @@ export interface SceneRenderer {
 
 const store = createStore()
 const sceneRoot = document.getElementById('scene')!
+
 const scenes: Record<Tab, SceneRenderer> = {
   projectile: createProjectileScene(store), deflection: createDeflectionScene(store),
   charges: createChargesScene(store), orbits: createOrbitsScene(store),
+  incline: createInclineScene(store),
 }
 
 const topbar = createTopbar(store)

@@ -3,6 +3,7 @@ import { CAPTIONS, fmt, formulasFor } from '../src/ui/panel'
 import { createStore } from '../src/state'
 import { fieldAt } from '../src/physics/fields'
 import { len } from '../src/physics/vec2'
+import { INCLINE } from '../src/scenes'
 
 describe('panel formatters', () => {
   it('fmt fixes digits and normalizes negative zero', () => {
@@ -52,7 +53,44 @@ describe('panel formatters', () => {
     expect(lines[1]).toContain('superposition of 2 charges')
   })
   it('every tab has a caption', () => {
-    for (const tab of ['projectile', 'deflection', 'charges', 'orbits'] as const)
+    for (const tab of ['projectile', 'deflection', 'charges', 'orbits', 'incline'] as const)
       expect(CAPTIONS[tab].length).toBeGreaterThan(10)
+  })
+  it('incline default state: uphill label matches its value, and the slope cannot ' +
+    'hold statically so it reports a turnaround, not a stop', () => {
+    const store = createStore()
+    store.setTab('incline')
+    const s = store.get()
+    const { theta: th, mu, v0 } = s.incline
+    expect(Math.tan(th)).toBeGreaterThan(mu) // default (20deg, mu 0.3) can't stick
+    const N = INCLINE.g * Math.cos(th)
+    const aVal = -INCLINE.g * (Math.sin(th) + mu * Math.cos(th))
+    const d = (v0 * v0) / (2 * INCLINE.g * (Math.sin(th) + mu * Math.cos(th)))
+    const lines = formulasFor(s)
+    expect(lines[0]).toBe(`N = mg\u00b7cos\u03b8 = ${fmt(N)} N`)
+    expect(lines[1]).toBe(
+      `a = \u2212g\u00b7(sin\u03b8 + \u03bc\u00b7cos\u03b8) = ${fmt(aVal)} m/s\u00b2`)
+    expect(lines[2]).toBe(
+      `turnaround after d = v0\u00b2/(2g(sin\u03b8 + \u03bc\u00b7cos\u03b8)) = ${fmt(d)} m`)
+  })
+  it('incline shows the static-friction message when the puck is released and sticks',
+    () => {
+      const store = createStore()
+      store.setTab('incline')
+      store.patchIncline({ v0: 0, mu: 0.5, theta: 10 * Math.PI / 180 })
+      const lines = formulasFor(store.get())
+      expect(lines[1]).toBe('a = 0 (static friction)')
+    })
+  it('incline reports stops-after on a slope shallow enough to hold statically', () => {
+    const store = createStore()
+    store.setTab('incline')
+    store.patchIncline({ theta: 15 * Math.PI / 180 })
+    const s = store.get()
+    const { theta: th, mu, v0 } = s.incline
+    expect(Math.tan(th)).toBeLessThanOrEqual(mu) // 15deg, mu 0.3: can stick
+    const d = (v0 * v0) / (2 * INCLINE.g * (Math.sin(th) + mu * Math.cos(th)))
+    const lines = formulasFor(s)
+    expect(lines[2]).toBe(
+      `stops after d = v0\u00b2/(2g(sin\u03b8 + \u03bc\u00b7cos\u03b8)) = ${fmt(d)} m`)
   })
 })
