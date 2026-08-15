@@ -5,13 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 "Motion in Force Fields" - an interactive physics teaching site for lycee-level
-students. Four canvas-2D scenes driven by one shared physics core: the same particle,
-the same RK4 integrator, four force laws. **Projectile** (uniform gravity, SI units,
+students. Five canvas-2D scenes driven by one shared physics core: the same particle,
+the same RK4 integrator, five force laws. **Projectile** (uniform gravity, SI units,
 air drag, restitution bounce), **Deflection** (charged particle between capacitor
 plates - the projectile parabola in disguise, an isomorphism enforced by a unit test),
 **Charges** (up to 8 point charges, live field lines and equipotentials, test-charge
 trajectory with capture), **Orbits** (Newtonian gravity, conic classification, foci,
-apsides, escape-velocity ring, Kepler equal-area sweep). Dragging initial conditions
+apsides, escape-velocity ring, Kepler equal-area sweep), **Incline** (puck on an
+inclined plane, SI units, static+kinetic friction, W/N/f/resultant force
+decomposition). Dragging initial conditions
 redraws the full predicted trajectory instantly; a play button animates the particle
 along the same samples. Static site, GitHub Pages.
 
@@ -22,7 +24,7 @@ conventions.
 
 ```bash
 npm run dev       # Vite dev server on :5173 (strict port)
-npm test          # vitest, 62 tests over the pure core, store, formatters
+npm test          # vitest, 70 tests over the pure core, store, formatters
 npm run build     # tsc --noEmit + vite build -> dist/
 npm run preview   # serve the production build
 ```
@@ -46,8 +48,12 @@ src/
     fields.ts       fieldAt/potentialAt, field lines (RK2 marching, seeds ~ |q|),
                     equipotentials (16-case marching squares, center-value saddle rule)
   scenes.ts         per-scene sim builders: DOMAINS, PLATES (incl. entryX, the beam
-                    spawn x), MU, buildSim(state); deflection force is windowed to
-                    the plate span and stops on plate contact (stopWhen)
+                    spawn x), MU, INCLINE (rampLength, g, vRest, FORCE_SCALE - the
+                    display-only world-units-per-newton for the force overlay),
+                    buildSim(state); deflection force is windowed to the plate span
+                    and stops on plate contact (stopWhen); incline is 1D dynamics
+                    embedded in the 2D core (pos.x = along-plane s, pos.y = 0) with
+                    stopWhen stick when |v| < vRest and tan(theta) <= mu
   state.ts          one Store with subscribe(): scene mutations rebuild the sim,
                     reset playback, bump revision, notify exactly once; playback/
                     overlay/selection mutations notify without recompute
@@ -75,6 +81,9 @@ src/
                     capped at high total |q|, drag/tap edit
     orbits.ts       conic label, foci, apsides, escape ring, equal-area sweep wedge
                     + live swept-area readout (Kepler II shown as a constant number)
+    incline.ts      ramp + angle arc, ghost mapped through worldOf(s), W/N/f/
+                    resultant overlay at FORCE_SCALE; sim, overlay, and panel all
+                    share the tan(theta) <= mu stick criterion - keep them in sync
   main.ts           SceneRenderer registry, tab mount/unmount, rAF playback loop
 tests/              vitest suites for physics, scenes, store, formatters, viewport
 ```

@@ -15,6 +15,10 @@ instantly, then press play.
   and equipotentials rebuild live, launch a test charge through the mess.
 - **Orbits** - one satellite around one heavy body: energy sign decides ellipse or
   escape, Kepler's equal areas shaded during playback.
+- **Incline** - a puck on an inclined plane (SI units): drag the ramp angle, the
+  puck, and its launch velocity; static friction holds it below tan(theta) = mu,
+  kinetic friction fights the slide; weight, normal reaction, friction, and the
+  resultant are drawn live at the puck.
 
 ## Quick start
 
