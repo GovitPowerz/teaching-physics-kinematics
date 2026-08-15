@@ -5,7 +5,7 @@ import {
   semiMajorAxis, specificEnergy, sweptArea,
 } from '../src/physics/orbital'
 import { simulate } from '../src/physics/trajectory'
-import { v } from '../src/physics/vec2'
+import { dot, v } from '../src/physics/vec2'
 
 const MU = 1
 
@@ -37,6 +37,13 @@ describe('orbital', () => {
     expect(rp).toBeCloseTo(a * (1 - e), 9)
     expect(ra).toBeCloseTo(a * (1 + e), 9)
     expect(periapsisApoapsis({ pos: v(1, 0), vel: v(0, 2) }, MU).ra).toBeNull()
+  })
+  it('hyperbola: finite negative semi-major axis, vis-viva holds, ra null', () => {
+    const s = { pos: v(1, 0), vel: v(0, 1.8) }
+    const a = semiMajorAxis(s, MU)
+    expect(a).toBeCloseTo(-1 / (2 * 0.62), 9)
+    expect(dot(s.vel, s.vel)).toBeCloseTo(MU * (2 / 1 - 1 / a), 9)
+    expect(periapsisApoapsis(s, MU).ra).toBeNull()
   })
   it('numerical ellipse closes after one analytic period', () => {
     const s0 = { pos: v(1.5, 0), vel: v(0, 0.9) }

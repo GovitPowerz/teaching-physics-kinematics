@@ -21,30 +21,32 @@ export const conicType = (e: number, tol = 1e-3): ConicType =>
 
 export const semiMajorAxis = (s: PState, mu: number): number => {
   const eps = specificEnergy(s, mu)
-  return eps >= 0 ? Infinity : -mu / (2 * eps)
+  return eps === 0 ? Infinity : -mu / (2 * eps)
 }
 
 export const period = (s: PState, mu: number): number => {
-  const a = semiMajorAxis(s, mu)
-  return Number.isFinite(a) ? 2 * Math.PI * Math.sqrt((a * a * a) / mu) : Infinity
+  if (specificEnergy(s, mu) >= 0) return Infinity
+  const a = semiMajorAxis(s, mu) // positive here (eps < 0), sqrt is safe
+  return 2 * Math.PI * Math.sqrt((a * a * a) / mu)
 }
 
 export const escapeVelocity = (r: number, mu: number): number => Math.sqrt(2 * mu / r)
 
 export const periapsisApoapsis = (s: PState, mu: number): { rp: number; ra: number | null } => {
   const e = eccentricity(s, mu)
-  const a = semiMajorAxis(s, mu)
-  if (!Number.isFinite(a)) {
+  if (specificEnergy(s, mu) >= 0) {
     const h = cross(s.pos, s.vel) // angular momentum, rp = h^2/mu / (1+e)
     return { rp: (h * h) / mu / (1 + e), ra: null }
   }
+  const a = semiMajorAxis(s, mu)
   return { rp: a * (1 - e), ra: a * (1 + e) }
 }
 
 export const sweptArea = (samples: Sample[], t0: number, t1: number): number => {
   let area = 0
   for (let i = 1; i < samples.length; i++) {
-    if (samples[i].t <= t0 || samples[i - 1].t >= t1) continue
+    if (samples[i - 1].t >= t1) break
+    if (samples[i].t <= t0) continue
     area += Math.abs(cross(samples[i - 1].pos, samples[i].pos)) / 2
   }
   return area

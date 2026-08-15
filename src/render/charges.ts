@@ -1,6 +1,5 @@
 import { equipotentials, fieldLines, type Segment } from '../physics/fields'
 import type { Charge } from '../physics/forces'
-import { duration, sampleAt } from '../physics/trajectory'
 import { add, v, type Vec2 } from '../physics/vec2'
 import { DOMAINS } from '../scenes'
 import type { Store } from '../state'
@@ -8,9 +7,7 @@ import type { SceneRenderer } from '../main'
 import { attachDrag, buttonRow, sliderRow, vecRow, type ControlRow, type Handle }
   from '../ui/controls'
 import { toScreen, toWorld, type Viewport } from './viewport'
-
-const css = (name: string) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+import { arrow, COLORS, drawCurrentMarker, drawTrail, type TrailCache } from './draw'
 
 const LEVELS = [-2, -1, -0.5, -0.25, 0.25, 0.5, 1, 2]
 
@@ -21,6 +18,7 @@ export const createChargesScene = (store: Store): SceneRenderer => {
   let nextSign: 1 | -1 = 1
   let lastSelected: number | null | undefined
   let cache: { key: string; lines: Vec2[][]; equis: Segment[] } | null = null
+  const trailCache: { current: TrailCache | null } = { current: null }
 
   const vp = (): Viewport =>
     ({ world: DOMAINS.charges, w: canvas.clientWidth, h: canvas.clientHeight })
@@ -32,9 +30,12 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     const s = store.get()
     const key = chargesKey(s.charges.charges)
     if (!cache || cache.key !== key) {
+      const totalUnits = s.charges.charges
+        .reduce((acc, c) => acc + Math.max(1, Math.round(Math.abs(c.q))), 0)
+      const seedsPerUnitCharge = totalUnits > 12 ? Math.max(2, Math.floor(96 / totalUnits)) : 8
       cache = {
         key,
-        lines: fieldLines(s.charges.charges, { bounds: DOMAINS.charges }),
+        lines: fieldLines(s.charges.charges, { bounds: DOMAINS.charges, seedsPerUnitCharge }),
         equis: equipotentials(s.charges.charges, LEVELS,
           { ...DOMAINS.charges, nx: 120, ny: 120 }),
       }
@@ -49,17 +50,6 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     hs.push({ id: 'testPos', pos: toScreen(vp(), c.testPos), radius: 10 })
     hs.push({ id: 'testVel', pos: toScreen(vp(), add(c.testPos, c.testVel)), radius: 12 })
     return hs
-  }
-
-  const arrow = (from: Vec2, to: Vec2, color: string) => {
-    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2
-    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke()
-    const ang = Math.atan2(to.y - from.y, to.x - from.x)
-    ctx.beginPath()
-    ctx.moveTo(to.x, to.y)
-    ctx.lineTo(to.x - 9 * Math.cos(ang - 0.4), to.y - 9 * Math.sin(ang - 0.4))
-    ctx.lineTo(to.x - 9 * Math.cos(ang + 0.4), to.y - 9 * Math.sin(ang + 0.4))
-    ctx.closePath(); ctx.fill()
   }
 
   let rows: ControlRow[] = []
@@ -106,11 +96,13 @@ export const createChargesScene = (store: Store): SceneRenderer => {
 
     const fc = fieldCache()
     ctx.globalAlpha = 0.5
-    ctx.strokeStyle = css('--dim'); ctx.lineWidth = 1
+    ctx.strokeStyle = COLORS.dim; ctx.lineWidth = 1
+    ctx.beginPath()
     for (const [a, b] of fc.equis) {
       const pa = toScreen(vp(), a); const pb = toScreen(vp(), b)
-      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke()
+      ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y)
     }
+    ctx.stroke()
     ctx.globalAlpha = 0.8
     for (const line of fc.lines) {
       ctx.beginPath()
@@ -122,45 +114,37 @@ export const createChargesScene = (store: Store): SceneRenderer => {
     }
     ctx.globalAlpha = 1
 
-    ctx.strokeStyle = css('--ghost'); ctx.lineWidth = 2
-    ctx.beginPath()
-    s.sim.samples.forEach((smp, i) => {
-      const p = toScreen(vp(), smp.pos)
-      if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y)
-    })
-    ctx.stroke()
-    ctx.fillStyle = css('--ghost')
-    for (let t = 0; t <= duration(s.sim); t += 0.5) {
-      const q = toScreen(vp(), sampleAt(s.sim.samples, t).pos)
-      ctx.beginPath(); ctx.arc(q.x, q.y, 2.5, 0, 2 * Math.PI); ctx.fill()
-    }
+    drawTrail(ctx, vp(), s.sim, s.revision,
+      { color: COLORS.ghost, tickStep: 0.5, tickRadius: 2.5 }, trailCache)
 
     s.charges.charges.forEach((ch, i) => {
       const p = toScreen(vp(), ch.pos)
-      ctx.fillStyle = ch.q > 0 ? css('--danger') : css('--accent')
+      ctx.fillStyle = ch.q > 0 ? COLORS.danger : COLORS.accent
       ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, 2 * Math.PI); ctx.fill()
-      ctx.fillStyle = css('--bg')
+      ctx.fillStyle = COLORS.bg
       ctx.font = 'bold 13px system-ui'
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText((ch.q > 0 ? '+' : '\u2212') + Math.abs(ch.q), p.x, p.y)
       if (s.charges.selected === i) {
-        ctx.strokeStyle = css('--fg'); ctx.lineWidth = 2
+        ctx.strokeStyle = COLORS.fg; ctx.lineWidth = 2
         ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, 2 * Math.PI); ctx.stroke()
       }
     })
     ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic'
 
-    const tp = toScreen(vp(), s.charges.testPos)
-    arrow(tp, toScreen(vp(), add(s.charges.testPos, s.charges.testVel)), css('--accent'))
-    ctx.fillStyle = css('--fg')
-    ctx.beginPath(); ctx.arc(tp.x, tp.y, 5, 0, 2 * Math.PI); ctx.fill()
+    drawCurrentMarker(ctx, vp(), s)
 
-    const cur = sampleAt(s.sim.samples, s.playback.t)
-    const curPx = toScreen(vp(), cur.pos)
-    ctx.fillStyle = css('--fg')
-    ctx.beginPath(); ctx.arc(curPx.x, curPx.y, 6, 0, 2 * Math.PI); ctx.fill()
-    if (s.overlays.v) arrow(curPx, toScreen(vp(), add(cur.pos, cur.vel)), css('--accent'))
-    if (s.overlays.a) arrow(curPx, toScreen(vp(), add(cur.pos, cur.acc)), css('--danger'))
+    // drawn after drawCurrentMarker so the test-charge sign glyph is not hidden
+    // by the undecorated playback dot when it sits at rest on top of it (t = 0)
+    const tp = toScreen(vp(), s.charges.testPos)
+    arrow(ctx, tp, toScreen(vp(), add(s.charges.testPos, s.charges.testVel)), COLORS.accent)
+    ctx.fillStyle = COLORS.fg
+    ctx.beginPath(); ctx.arc(tp.x, tp.y, 5, 0, 2 * Math.PI); ctx.fill()
+    ctx.fillStyle = COLORS.bg
+    ctx.font = 'bold 13px system-ui'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(s.charges.testSign > 0 ? '+' : '\u2212', tp.x, tp.y)
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic'
   }
 
   return {
@@ -186,8 +170,10 @@ export const createChargesScene = (store: Store): SceneRenderer => {
         },
         (screenPos) => {
           const w = toWorld(vp(), screenPos)
-          store.selectCharge(null)
           store.addCharge(w, nextSign)
+        },
+        (id) => {
+          if (id.startsWith('charge:')) store.selectCharge(Number(id.slice(7)))
         })
     },
     unmount: () => { canvas.remove(); controls.remove() },

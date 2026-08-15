@@ -15,6 +15,10 @@ describe('fields', () => {
     expect(potentialAt([{ pos: v(0, 0), q: 1 }], v(1, 0)))
       .toBeCloseTo(1 / Math.sqrt(1 + SOFTENING * SOFTENING), 12)
   })
+  it('fieldAt and potentialAt are zero with no charges', () => {
+    expect(fieldAt([], v(0.3, -0.4))).toEqual(v(0, 0))
+    expect(potentialAt([], v(1, 1))).toBe(0)
+  })
   it('seed count scales with |q|', () => {
     const one = fieldLines([{ pos: v(0, 0), q: 1 }], { bounds: BOUNDS })
     const three = fieldLines([{ pos: v(0, 0), q: 3 }], { bounds: BOUNDS })

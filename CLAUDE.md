@@ -22,7 +22,7 @@ conventions.
 
 ```bash
 npm run dev       # Vite dev server on :5173 (strict port)
-npm test          # vitest, 53 tests over the pure core, store, formatters
+npm test          # vitest, 62 tests over the pure core, store, formatters
 npm run build     # tsc --noEmit + vite build -> dist/
 npm run preview   # serve the production build
 ```
@@ -45,25 +45,36 @@ src/
                     period, escapeVelocity, periapsisApoapsis, sweptArea
     fields.ts       fieldAt/potentialAt, field lines (RK2 marching, seeds ~ |q|),
                     equipotentials (16-case marching squares, center-value saddle rule)
-  scenes.ts         per-scene sim builders: DOMAINS, PLATES, MU, buildSim(state);
-                    deflection force is windowed to the plate span and stops on
-                    plate contact (stopWhen)
+  scenes.ts         per-scene sim builders: DOMAINS, PLATES (incl. entryX, the beam
+                    spawn x), MU, buildSim(state); deflection force is windowed to
+                    the plate span and stops on plate contact (stopWhen)
   state.ts          one Store with subscribe(): scene mutations rebuild the sim,
                     reset playback, bump revision, notify exactly once; playback/
                     overlay/selection mutations notify without recompute
   ui/
-    panel.ts        fmt, formulasFor (live-number formula lines per scene), CAPTIONS
+    panel.ts        fmt, formulasFor (live-number formula lines per scene), CAPTIONS;
+                    createPanel memoizes on tab+formula content (skips DOM churn
+                    during playback)
     controls.ts     sliderRow/vecRow -> ControlRow {el, refresh} (focus-safe two-way
-                    text fields), hitTest/attachDrag, buttonRow
+                    text fields), hitTest, buttonRow; attachDrag distinguishes taps
+                    (<= 4 px, onTapHandle/onTapEmpty on pointerup) from drags
+                    (rAF-coalesced onDrag), sets hover/grab cursors, guards
+                    pointercancel and post-unmount flushes
     topbar.ts       four-tab switcher
     playback.ts     play/pause, reset, scrubber, speed, v/a overlay toggles
   render/
     viewport.ts     uniform min-fit world<->screen transform, y up
+    draw.ts         shared by all four scenes: COLORS (CSS custom props resolved
+                    once at module load), arrow, drawTrail (Path2D line+ticks cached
+                    on revision + canvas size), drawCurrentMarker (playback dot +
+                    v/a overlay arrows)
     projectile.ts   grid+ground, ghost, dashed ideal (cached on revision), apex/range
     deflection.ts   plates colored by polarity, field arrows, screen + impact dot
     charges.ts      field lines + equipotentials cached on charge CONTENT (not
-                    revision - test-charge drags must not invalidate), drag/tap edit
+                    revision - test-charge drags must not invalidate), seed budget
+                    capped at high total |q|, drag/tap edit
     orbits.ts       conic label, foci, apsides, escape ring, equal-area sweep wedge
+                    + live swept-area readout (Kepler II shown as a constant number)
   main.ts           SceneRenderer registry, tab mount/unmount, rAF playback loop
 tests/              vitest suites for physics, scenes, store, formatters, viewport
 ```
@@ -77,6 +88,12 @@ Invariants worth keeping:
   k_coulomb = 1, unit mass); captions say so.
 - capture radii (0.1-0.12) exceed SOFTENING (0.05), so trajectories stop before
   softening visibly fakes the physics.
+- Panel formulas tell the truth about the drawn curve: the deflection y(t) line is
+  the shifted signed parabola (t0 = plate-entry time, a carries d.sign), and the
+  projectile x/y lines are tagged "(k = 0 reference)" whenever drag is on.
+- semiMajorAxis is finite negative for hyperbolas (energy-branch, not
+  Number.isFinite, decides escape in periapsisApoapsis/period), keeping the
+  vis-viva identity displayed by the orbits panel true for every conic.
 
 ## Key Lessons & Pitfalls
 
@@ -98,6 +115,13 @@ dt = tEnd/N.
 
 The softened kernel changes the true orbit period ~0.1% off the Kepler value; closure
 tests against the ANALYTIC period need loose tolerance (see tests/orbital.test.ts).
+
+### Focus-based UI guards freeze on macOS
+
+Guarding "don't clobber the control the user is using" with document.activeElement
+fails on macOS: clicking a button does not move focus off a form control, so a
+focused scrubber never updates again during playback. Track interaction explicitly
+(pointerdown/up/cancel flags), never via focus.
 
 ### Bounces can phantom-fire
 

@@ -1,7 +1,7 @@
 import { fieldAt } from '../physics/fields'
 import { conicType, eccentricity, escapeVelocity, specificEnergy } from '../physics/orbital'
 import { dot, len } from '../physics/vec2'
-import { MU } from '../scenes'
+import { MU, PLATES } from '../scenes'
 import type { AppState, Store, Tab } from '../state'
 
 export const fmt = (x: number, digits = 2): string => {
@@ -14,7 +14,7 @@ export const CAPTIONS: Record<Tab, string> = {
     'A uniform gravitational field: velocity changes, acceleration never does.',
   deflection:
     'Same math as the projectile - a uniform field is a uniform field. ' +
-    'Field exists only between the plates.',
+    'Field exists only between the plates. Normalized units.',
   charges:
     'Superposition: every charge pushes on the test charge at once. ' +
     'Field shape drives motion. Normalized units.',
@@ -28,9 +28,10 @@ export const formulasFor = (s: AppState): string[] => {
     case 'projectile': {
       const p = s.projectile
       const T = (p.v0.y + Math.sqrt(p.v0.y * p.v0.y + 2 * p.g * p.launch.y)) / p.g
+      const ref = p.dragK > 0 ? ' (k = 0 reference)' : ''
       return [
-        `x(t) = ${fmt(p.launch.x)} + ${fmt(p.v0.x)}\u00b7t`,
-        `y(t) = ${fmt(p.launch.y)} + ${fmt(p.v0.y)}\u00b7t \u2212 \u00bd\u00b7${fmt(p.g)}\u00b7t\u00b2`,
+        `x(t) = ${fmt(p.launch.x)} + ${fmt(p.v0.x)}\u00b7t${ref}`,
+        `y(t) = ${fmt(p.launch.y)} + ${fmt(p.v0.y)}\u00b7t \u2212 \u00bd\u00b7${fmt(p.g)}\u00b7t\u00b2${ref}`,
         `ideal flight T = ${fmt(T)} s, range = ${fmt(p.v0.x * T)} m`,
       ]
     }
@@ -39,9 +40,13 @@ export const formulasFor = (s: AppState): string[] => {
       const last = s.sim.samples[s.sim.samples.length - 1]
       const dy = s.sim.stopReason === 'screen' ? fmt(last.pos.y)
         : s.sim.stopReason === 'custom' ? 'n/a (hit a plate)' : 'n/a'
+      // t0: time the beam reaches the field-entry plane at x = PLATES.x0
+      // (the field is windowed to the plate span; y(t) is flat before this)
+      const t0 = (PLATES.x0 - PLATES.entryX) / d.v0
       return [
-        `x(t) = 0.20 + ${fmt(d.v0)}\u00b7t`,
-        `y(t) = \u00bd\u00b7(qE/m)\u00b7t\u00b2 inside the plates, a = ${fmt(d.a)}`,
+        `x(t) = ${fmt(PLATES.entryX)} + ${fmt(d.v0)}\u00b7t`,
+        `y = \u00bd\u00b7a\u00b7(t \u2212 ${fmt(t0)})\u00b2 between the plates, ` +
+          `a = ${fmt(d.sign * d.a)}`,
         `deflection at screen = ${dy}`,
       ]
     }
@@ -68,10 +73,15 @@ export const formulasFor = (s: AppState): string[] => {
 
 export const createPanel = (store: Store) => {
   const el = document.createElement('div')
+  let lastKey: string | null = null
   const render = () => {
     const s = store.get()
+    const lines = formulasFor(s)
+    const key = s.tab + '|' + lines.join('\n')
+    if (key === lastKey) return
+    lastKey = key
     el.innerHTML = ''
-    for (const line of formulasFor(s)) {
+    for (const line of lines) {
       const div = document.createElement('div')
       div.className = 'formula'
       div.textContent = line

@@ -2,7 +2,7 @@ import type { Force } from './integrate'
 import { add, scale, sub, v, type Vec2 } from './vec2'
 
 export interface Charge { pos: Vec2; q: number }
-export const SOFTENING = 0.05
+export const SOFTENING = 0.05 // world units; must stay below every captureRadius in scenes.ts
 
 const softenedKernel = (rVec: Vec2, K: number): Vec2 => {
   const d2 = rVec.x * rVec.x + rVec.y * rVec.y + SOFTENING * SOFTENING
