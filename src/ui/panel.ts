@@ -78,17 +78,25 @@ export const formulasFor = (s: AppState): string[] => {
       const mu = i.mu
       const N = INCLINE.g * Math.cos(th)
       const stuck = s.sim.stopReason === 'custom' && duration(s.sim) < 0.1
-      const aVal = -INCLINE.g * (Math.sin(th) + mu * Math.cos(th) * Math.sign(i.v0))
+      const uphill = i.v0 > 0
+      // v0 <= 0 (sliding down, or released from rest) never uses sign(0) = 0:
+      // friction opposes downhill motion, so it acts uphill (+) unconditionally.
+      const aVal = uphill
+        ? -INCLINE.g * (Math.sin(th) + mu * Math.cos(th))
+        : INCLINE.g * (mu * Math.cos(th) - Math.sin(th))
       const lines = [
         `N = mg\u00b7cos\u03b8 = ${fmt(N)} N`,
         stuck
           ? `a = 0 (static friction)`
-          : `a = g\u00b7(sin\u03b8 \u2212 \u03bc\u00b7cos\u03b8) = ${fmt(aVal)} m/s\u00b2`,
+          : uphill
+            ? `a = \u2212g\u00b7(sin\u03b8 + \u03bc\u00b7cos\u03b8) = ${fmt(aVal)} m/s\u00b2`
+            : `a = g\u00b7(\u03bc\u00b7cos\u03b8 \u2212 sin\u03b8) = ${fmt(aVal)} m/s\u00b2`,
       ]
       if (i.v0 > 0) {
         const d = (i.v0 * i.v0) / (2 * INCLINE.g * (Math.sin(th) + mu * Math.cos(th)))
+        const verb = Math.tan(th) <= mu ? 'stops' : 'turnaround'
         lines.push(
-          `stops after d = v0\u00b2/(2g(sin\u03b8 + \u03bc\u00b7cos\u03b8)) = ${fmt(d)} m`)
+          `${verb} after d = v0\u00b2/(2g(sin\u03b8 + \u03bc\u00b7cos\u03b8)) = ${fmt(d)} m`)
       }
       return lines
     }

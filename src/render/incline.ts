@@ -19,7 +19,7 @@ const label = (
   ctx.fillText(text, at.x + 4, at.y - 4)
 }
 
-// arrow() (draw.ts) hardcodes lineWidth 2; the friction vector needs the
+// arrow() (draw.ts) hardcodes lineWidth 2; the resultant a vector needs the
 // spec's 3px emphasis and draw.ts is out of scope for this change, so this
 // is a thin local copy of arrow() with a configurable width.
 const thickArrow = (
@@ -59,7 +59,7 @@ export const createInclineScene = (store: Store): SceneRenderer => {
     return [
       { id: 'puck', pos: toScreen(vp(), puckW), radius: 12 },
       { id: 'v0', pos: toScreen(vp(), v0TipW), radius: 12 },
-      { id: 'angle', pos: toScreen(vp(), worldOf(9.5, th)), radius: 14 },
+      { id: 'angle', pos: toScreen(vp(), worldOf(INCLINE.rampLength - 0.5, th)), radius: 14 },
     ]
   }
 
@@ -134,7 +134,7 @@ export const createInclineScene = (store: Store): SceneRenderer => {
     ctx.font = '13px ui-monospace, monospace'
     ctx.fillText('\u03b8', thLabelPx.x, thLabelPx.y)
 
-    const ahPx = toScreen(vp(), worldOf(9.5, th))
+    const ahPx = toScreen(vp(), worldOf(INCLINE.rampLength - 0.5, th))
     ctx.strokeStyle = COLORS.accent; ctx.lineWidth = 2
     ctx.beginPath(); ctx.arc(ahPx.x, ahPx.y, 6, 0, 2 * Math.PI); ctx.stroke()
 
@@ -148,29 +148,35 @@ export const createInclineScene = (store: Store): SceneRenderer => {
 
     const vel = cur.vel.x
     const atRest = Math.abs(vel) < INCLINE.vRest
+    // stuck (truly static) requires both near-zero velocity AND enough
+    // friction capacity to hold the puck (tan theta <= mu) - matches the
+    // sim's own stopWhen condition in scenes.ts. atRest alone is not enough:
+    // on a slope that cannot hold statically, the puck passes through
+    // atRest at the turnaround instant but keeps accelerating.
+    const stuck = atRest && Math.tan(th) <= mu
+    const FS = INCLINE.FORCE_SCALE
 
-    const wTip = toScreen(vp(), add(puckWorld, v(0, -g)))
+    const wTip = toScreen(vp(), add(puckWorld, v(0, -g * FS)))
     arrow(ctx, puckPx, wTip, COLORS.danger)
     label(ctx, 'W', wTip, COLORS.danger)
 
-    const nTip = toScreen(vp(), add(puckWorld, scale(normalDir, g * Math.cos(th))))
+    const nTip = toScreen(vp(), add(puckWorld, scale(normalDir, g * Math.cos(th) * FS)))
     arrow(ctx, puckPx, nTip, COLORS.accent)
     label(ctx, 'N', nTip, COLORS.accent)
 
     // friction: static value (balancing) at rest, else kinetic opposing motion
     if (mu > 0) {
-      const fMag = atRest ? g * Math.sin(th) : -Math.sign(vel) * mu * g * Math.cos(th)
-      const fTip = toScreen(vp(), add(puckWorld, scale(tan, fMag)))
-      thickArrow(ctx, puckPx, fTip, COLORS.dim)
+      const fMag = stuck ? g * Math.sin(th) : -Math.sign(vel) * mu * g * Math.cos(th)
+      const fTip = toScreen(vp(), add(puckWorld, scale(tan, fMag * FS)))
+      arrow(ctx, puckPx, fTip, COLORS.dim)
       label(ctx, 'f', fTip, COLORS.dim)
     }
 
-    // resultant a: zero (nothing drawn) only when at rest AND friction is
-    // available to balance gravity (mu > 0) - the "stuck" case
-    if (s.overlays.a && !(atRest && mu > 0)) {
+    // resultant a: zero (nothing drawn) only when truly stuck
+    if (s.overlays.a && !stuck) {
       const aVal = atRest ? -g * Math.sin(th) : cur.acc.x
-      const aTip = toScreen(vp(), add(puckWorld, scale(tan, aVal)))
-      arrow(ctx, puckPx, aTip, COLORS.fg)
+      const aTip = toScreen(vp(), add(puckWorld, scale(tan, aVal * FS)))
+      thickArrow(ctx, puckPx, aTip, COLORS.fg)
       label(ctx, 'a', aTip, COLORS.fg)
     }
 
@@ -211,7 +217,8 @@ export const createInclineScene = (store: Store): SceneRenderer => {
         const th = i.theta
         const tan = v(Math.cos(th), Math.sin(th))
         if (id === 'puck') {
-          store.patchIncline({ s0: Math.min(9.8, Math.max(0.2, dot(w, tan))) })
+          store.patchIncline(
+            { s0: Math.min(INCLINE.rampLength - 0.2, Math.max(0.2, dot(w, tan))) })
         } else if (id === 'v0') {
           const puckW = worldOf(i.s0, th)
           store.patchIncline({ v0: Math.min(8, Math.max(-8, dot(sub(w, puckW), tan))) })

@@ -11,7 +11,7 @@ export const DOMAINS = {
   deflection: { xMin: 0, xMax: 10, yMin: -3, yMax: 3 },
   charges: { xMin: -4, xMax: 4, yMin: -4, yMax: 4 },
   orbits: { xMin: -4, xMax: 4, yMin: -4, yMax: 4 },
-  incline: { xMin: 0, xMax: 10, yMin: 0, yMax: 6 },
+  incline: { xMin: 0, xMax: 10, yMin: 0, yMax: 7.5 },
 } as const
 
 export const PLATES = { x0: 2, entryX: 0.2, gap: 1.6, screenX: 9 }
@@ -20,6 +20,7 @@ export const INCLINE = {
   rampLength: 10, // m
   g: 9.81, // m/s^2
   vRest: 0.05, // m/s
+  FORCE_SCALE: 0.25, // world units per N, display only
 } as const
 
 export const buildSim = (s: AppState): SimResult => {
