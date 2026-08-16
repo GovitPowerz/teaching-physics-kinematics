@@ -15,6 +15,8 @@ export const COLORS = {
   ghostRef: css('--ghost-ref'),
   danger: css('--danger'),
   grid: css('--grid'),
+  ramp: css('--ramp'),
+  friction: css('--friction'),
 }
 
 export const arrow = (

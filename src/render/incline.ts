@@ -11,12 +11,21 @@ import { arrow, COLORS } from './draw'
 // derived from a sample must go through worldOf(s, theta) first.
 const worldOf = (s: number, th: number): Vec2 => v(s * Math.cos(th), s * Math.sin(th))
 
+// the puck's CENTER rides one radius above the contact surface; lifting all
+// puck-anchored geometry (trail, arrows, marker) by this screen offset keeps
+// it visually separated from the ramp edge, which everything is otherwise
+// collinear with by construction
+const PUCK_R = 9
+
 const label = (
   ctx: CanvasRenderingContext2D, text: string, at: Vec2, color: string,
 ): void => {
+  ctx.font = 'bold 14px ui-monospace, monospace'
+  ctx.strokeStyle = COLORS.bg
+  ctx.lineWidth = 3
+  ctx.strokeText(text, at.x + 5, at.y - 5)
   ctx.fillStyle = color
-  ctx.font = '13px ui-monospace, monospace'
-  ctx.fillText(text, at.x + 4, at.y - 4)
+  ctx.fillText(text, at.x + 5, at.y - 5)
 }
 
 // arrow() (draw.ts) hardcodes lineWidth 2; the resultant a vector needs the
@@ -50,6 +59,11 @@ export const createInclineScene = (store: Store): SceneRenderer => {
   const vp = (): Viewport =>
     ({ world: DOMAINS.incline, w: canvas.clientWidth, h: canvas.clientHeight })
 
+  // screen-space lift along the up-normal (screen y is flipped vs world y)
+  const liftPx = (th: number): Vec2 =>
+    v(-Math.sin(th) * PUCK_R, -Math.cos(th) * PUCK_R)
+  const lifted = (wpt: Vec2, th: number): Vec2 => add(toScreen(vp(), wpt), liftPx(th))
+
   const handles = (): Handle[] => {
     const i = store.get().incline
     const th = i.theta
@@ -57,8 +71,8 @@ export const createInclineScene = (store: Store): SceneRenderer => {
     const puckW = worldOf(i.s0, th)
     const v0TipW = add(puckW, scale(tan, i.v0))
     return [
-      { id: 'puck', pos: toScreen(vp(), puckW), radius: 12 },
-      { id: 'v0', pos: toScreen(vp(), v0TipW), radius: 12 },
+      { id: 'puck', pos: lifted(puckW, th), radius: 12 },
+      { id: 'v0', pos: lifted(v0TipW, th), radius: 12 },
       { id: 'angle', pos: toScreen(vp(), worldOf(INCLINE.rampLength - 0.5, th)), radius: 14 },
     ]
   }
@@ -70,18 +84,19 @@ export const createInclineScene = (store: Store): SceneRenderer => {
   // revision-keyed Path2D cache - is cheap enough.
   const drawGhost = (vpp: Viewport, th: number) => {
     const s = store.get()
+    const lift = liftPx(th)
     ctx.strokeStyle = COLORS.ghost
     ctx.lineWidth = 2
     ctx.beginPath()
     s.sim.samples.forEach((smp, idx) => {
-      const p = toScreen(vpp, worldOf(smp.pos.x, th))
+      const p = add(toScreen(vpp, worldOf(smp.pos.x, th)), lift)
       if (idx === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y)
     })
     ctx.stroke()
     ctx.fillStyle = COLORS.ghost
     const dur = duration(s.sim)
     for (let t = 0; t <= dur; t += 0.5) {
-      const p = toScreen(vpp, worldOf(sampleAt(s.sim.samples, t).pos.x, th))
+      const p = add(toScreen(vpp, worldOf(sampleAt(s.sim.samples, t).pos.x, th)), lift)
       ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI); ctx.fill()
     }
   }
@@ -111,11 +126,11 @@ export const createInclineScene = (store: Store): SceneRenderer => {
     const oPx = toScreen(vp(), v(0, 0))
     const topPx = toScreen(vp(), top)
     const footPx = toScreen(vp(), foot)
-    ctx.fillStyle = COLORS.grid
+    ctx.fillStyle = COLORS.ramp
     ctx.beginPath()
     ctx.moveTo(oPx.x, oPx.y); ctx.lineTo(topPx.x, topPx.y); ctx.lineTo(footPx.x, footPx.y)
     ctx.closePath(); ctx.fill()
-    ctx.strokeStyle = COLORS.dim; ctx.lineWidth = 2
+    ctx.strokeStyle = COLORS.fg; ctx.lineWidth = 2
     ctx.beginPath(); ctx.moveTo(oPx.x, oPx.y); ctx.lineTo(topPx.x, topPx.y); ctx.stroke()
 
     const arcR = 1
@@ -130,9 +145,7 @@ export const createInclineScene = (store: Store): SceneRenderer => {
     ctx.stroke()
     const thLabelPx =
       toScreen(vp(), v(1.3 * Math.cos(th / 2), 1.3 * Math.sin(th / 2)))
-    ctx.fillStyle = COLORS.dim
-    ctx.font = '13px ui-monospace, monospace'
-    ctx.fillText('\u03b8', thLabelPx.x, thLabelPx.y)
+    label(ctx, '\u03b8', thLabelPx, COLORS.fg)
 
     const ahPx = toScreen(vp(), worldOf(INCLINE.rampLength - 0.5, th))
     ctx.strokeStyle = COLORS.accent; ctx.lineWidth = 2
@@ -142,9 +155,8 @@ export const createInclineScene = (store: Store): SceneRenderer => {
 
     const cur = sampleAt(s.sim.samples, s.playback.t)
     const puckWorld = worldOf(cur.pos.x, th)
-    const puckPx = toScreen(vp(), puckWorld)
-    ctx.fillStyle = COLORS.fg
-    ctx.beginPath(); ctx.arc(puckPx.x, puckPx.y, 7, 0, 2 * Math.PI); ctx.fill()
+    const puckPx = lifted(puckWorld, th)
+    const lift = liftPx(th)
 
     const vel = cur.vel.x
     const atRest = Math.abs(vel) < INCLINE.vRest
@@ -156,38 +168,46 @@ export const createInclineScene = (store: Store): SceneRenderer => {
     const stuck = atRest && Math.tan(th) <= mu
     const FS = INCLINE.FORCE_SCALE
 
-    const wTip = toScreen(vp(), add(puckWorld, v(0, -g * FS)))
+    const wTip = add(toScreen(vp(), add(puckWorld, v(0, -g * FS))), lift)
     arrow(ctx, puckPx, wTip, COLORS.danger)
     label(ctx, 'W', wTip, COLORS.danger)
 
-    const nTip = toScreen(vp(), add(puckWorld, scale(normalDir, g * Math.cos(th) * FS)))
+    const nTip =
+      add(toScreen(vp(), add(puckWorld, scale(normalDir, g * Math.cos(th) * FS))), lift)
     arrow(ctx, puckPx, nTip, COLORS.accent)
     label(ctx, 'N', nTip, COLORS.accent)
 
     // friction: static value (balancing) at rest, else kinetic opposing motion
     if (mu > 0) {
       const fMag = stuck ? g * Math.sin(th) : -Math.sign(vel) * mu * g * Math.cos(th)
-      const fTip = toScreen(vp(), add(puckWorld, scale(tan, fMag * FS)))
-      arrow(ctx, puckPx, fTip, COLORS.dim)
-      label(ctx, 'f', fTip, COLORS.dim)
+      const fTip = add(toScreen(vp(), add(puckWorld, scale(tan, fMag * FS))), lift)
+      arrow(ctx, puckPx, fTip, COLORS.friction)
+      label(ctx, 'f', fTip, COLORS.friction)
     }
 
     // resultant a: zero (nothing drawn) only when truly stuck
     if (s.overlays.a && !stuck) {
       const aVal = atRest ? -g * Math.sin(th) : cur.acc.x
-      const aTip = toScreen(vp(), add(puckWorld, scale(tan, aVal * FS)))
+      const aTip = add(toScreen(vp(), add(puckWorld, scale(tan, aVal * FS))), lift)
       thickArrow(ctx, puckPx, aTip, COLORS.fg)
       label(ctx, 'a', aTip, COLORS.fg)
     }
 
     const s0World = worldOf(i.s0, th)
-    arrow(ctx, toScreen(vp(), s0World), toScreen(vp(), add(s0World, scale(tan, i.v0))),
-      COLORS.accent)
+    arrow(ctx, lifted(s0World, th),
+      lifted(add(s0World, scale(tan, i.v0)), th), COLORS.accent)
 
     if (s.overlays.v) {
-      const velTip = toScreen(vp(), add(puckWorld, scale(tan, vel)))
+      const velTip = add(toScreen(vp(), add(puckWorld, scale(tan, vel))), lift)
       arrow(ctx, puckPx, velTip, COLORS.accent)
     }
+
+    // puck last, on top of the arrow tails converging at its center
+    ctx.fillStyle = COLORS.fg
+    ctx.strokeStyle = COLORS.bg
+    ctx.lineWidth = 2
+    ctx.beginPath(); ctx.arc(puckPx.x, puckPx.y, PUCK_R, 0, 2 * Math.PI)
+    ctx.fill(); ctx.stroke()
   }
 
   return {
